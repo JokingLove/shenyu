@@ -17,33 +17,35 @@
 
 package org.apache.shenyu.client.core.register.registrar;
 
-import org.apache.shenyu.client.core.disruptor.ShenyuClientRegisterEventPublisher;
 import org.apache.shenyu.client.core.register.ApiBean;
-import org.apache.shenyu.client.core.register.matcher.Matcher;
-import org.apache.shenyu.client.core.register.parser.Parser;
 import org.apache.shenyu.register.common.type.DataTypeParent;
 
 import java.util.List;
 
-public class ApiRegistrar<D extends DataTypeParent> extends AbstractRegistrar<ApiBean.ApiDefinition> {
-
-    private final ShenyuClientRegisterEventPublisher publisher;
-
-    private final Parser<List<D>, ApiBean.ApiDefinition> parser;
-
-    public ApiRegistrar(final Matcher<ApiBean.ApiDefinition> matcher,
-                        final Parser<List<D>, ApiBean.ApiDefinition> parser,
-                        final ShenyuClientRegisterEventPublisher publisher) {
-        super(matcher);
-        this.publisher = publisher;
-        this.parser = parser;
+public interface ApiRegistrar {
+    
+    /**
+     * Registers ApiBean.
+     *
+     * @param beans apiBean to register
+     */
+    default void register(List<ApiBean> beans) {
+        beans.forEach(this::register);
     }
-
-    @Override
-    protected final void doRegister(final ApiBean.ApiDefinition element) {
-
-        List<? extends D> datas = parser.parse(element);
-
-        datas.forEach(publisher::publishEvent);
+    
+    /**
+     * Registers ApiBean.
+     *
+     * @param apiBean apiBean to register
+     */
+    void register(ApiBean apiBean);
+    
+    /**
+     * registerDataType.
+     *
+     * @return class type
+     */
+    default Class<?> registerDataType() {
+        return DataTypeParent.class;
     }
 }

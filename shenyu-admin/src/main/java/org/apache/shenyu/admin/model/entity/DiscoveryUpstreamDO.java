@@ -32,9 +32,9 @@ public class DiscoveryUpstreamDO extends BaseDO {
     private static final long serialVersionUID = 4636503463949130337L;
 
     /**
-     * discoveryId.
+     * discoveryHandlerId.
      */
-    private String discoveryId;
+    private String discoveryHandlerId;
 
     /**
      * protocol.
@@ -62,6 +62,11 @@ public class DiscoveryUpstreamDO extends BaseDO {
     private String props;
 
     /**
+     * namespaceId.
+     */
+    private String namespaceId;
+
+    /**
      * DiscoveryUpstreamDO.
      */
     public DiscoveryUpstreamDO() {
@@ -71,17 +76,17 @@ public class DiscoveryUpstreamDO extends BaseDO {
     /**
      * DiscoveryUpstreamDO.
      *
-     * @param discoveryId discoveryId
+     * @param discoveryHandlerId discoveryHandlerId
      * @param protocol    protocol
      * @param url         url
      * @param status      status
      * @param weight      weight
      * @param props       props
      */
-    public DiscoveryUpstreamDO(final String discoveryId, final String protocol, final String url, final int status,
+    public DiscoveryUpstreamDO(final String discoveryHandlerId, final String protocol, final String url, final int status,
                                final int weight, final String props) {
 
-        this.discoveryId = discoveryId;
+        this.discoveryHandlerId = discoveryHandlerId;
         this.protocol = protocol;
         this.url = url;
         this.status = status;
@@ -90,23 +95,23 @@ public class DiscoveryUpstreamDO extends BaseDO {
     }
 
     /**
-     * getDiscoveryId.
+     * getDiscoveryHandlerId.
      *
-     * @return discoveryId
+     * @return discoveryHandlerId
      */
-    public String getDiscoveryId() {
+    public String getDiscoveryHandlerId() {
 
-        return discoveryId;
+        return discoveryHandlerId;
     }
 
     /**
-     * setDiscoveryId.
+     * setDiscoveryHandlerId.
      *
-     * @param discoveryId discoveryId
+     * @param discoveryHandlerId discoveryHandlerId
      */
-    public void setDiscoveryId(final String discoveryId) {
+    public void setDiscoveryHandlerId(final String discoveryHandlerId) {
 
-        this.discoveryId = discoveryId;
+        this.discoveryHandlerId = discoveryHandlerId;
     }
 
     /**
@@ -220,6 +225,24 @@ public class DiscoveryUpstreamDO extends BaseDO {
     }
 
     /**
+     * get namespaceId.
+     *
+     * @return namespaceId
+     */
+    public String getNamespaceId() {
+        return namespaceId;
+    }
+
+    /**
+     * set namespaceId.
+     *
+     * @param namespaceId namespaceId
+     */
+    public void setNamespaceId(final String namespaceId) {
+        this.namespaceId = namespaceId;
+    }
+
+    /**
      * buildDiscoveryUpstreamDO.
      *
      * @param discoveryUpstreamDTO discoveryUpstreamDTO
@@ -230,11 +253,14 @@ public class DiscoveryUpstreamDO extends BaseDO {
         return Optional.ofNullable(discoveryUpstreamDTO).map(item -> {
             Timestamp currentTime = new Timestamp(System.currentTimeMillis());
             DiscoveryUpstreamDO discoveryUpstreamDO = DiscoveryUpstreamDO.builder()
-                    .discoveryId(item.getDiscoveryId())
+                    .discoveryHandlerId(item.getDiscoveryHandlerId())
                     .protocol(item.getProtocol())
                     .status(item.getStatus())
                     .weight(item.getWeight())
                     .props(item.getProps())
+                    .url(item.getUrl())
+                    .namespaceId(item.getNamespaceId())
+                    .dateCreated(currentTime)
                     .dateUpdated(currentTime).build();
             if (StringUtils.hasLength(item.getId())) {
                 discoveryUpstreamDO.setId(item.getId());
@@ -267,9 +293,9 @@ public class DiscoveryUpstreamDO extends BaseDO {
         private Timestamp dateUpdated;
 
         /**
-         * discoveryId.
+         * discoveryHandlerId.
          */
-        private String discoveryId;
+        private String discoveryHandlerId;
 
         /**
          * protocol.
@@ -295,6 +321,11 @@ public class DiscoveryUpstreamDO extends BaseDO {
          * props.
          */
         private String props;
+
+        /**
+         * namespaceId.
+         */
+        private String namespaceId;
 
         /**
          * id.
@@ -333,14 +364,14 @@ public class DiscoveryUpstreamDO extends BaseDO {
         }
 
         /**
-         * discoveryId.
+         * discoveryHandlerId.
          *
-         * @param discoveryId discoveryId
+         * @param discoveryHandlerId discoveryHandlerId
          * @return DiscoveryUpstreamBuilder
          */
-        public DiscoveryUpstreamBuilder discoveryId(final String discoveryId) {
+        public DiscoveryUpstreamBuilder discoveryHandlerId(final String discoveryHandlerId) {
 
-            this.discoveryId = discoveryId;
+            this.discoveryHandlerId = discoveryHandlerId;
             return this;
         }
 
@@ -405,6 +436,17 @@ public class DiscoveryUpstreamDO extends BaseDO {
         }
 
         /**
+         * build namespaceId.
+         *
+         * @param namespaceId namespaceId
+         * @return this
+         */
+        public DiscoveryUpstreamBuilder namespaceId(final String namespaceId) {
+            this.namespaceId = namespaceId;
+            return this;
+        }
+
+        /**
          * build.
          *
          * @return DiscoveryUpstreamDO
@@ -413,12 +455,13 @@ public class DiscoveryUpstreamDO extends BaseDO {
 
             DiscoveryUpstreamDO discoveryUpstreamDO = new DiscoveryUpstreamDO();
             discoveryUpstreamDO.setId(this.id);
-            discoveryUpstreamDO.setDiscoveryId(this.discoveryId);
+            discoveryUpstreamDO.setDiscoveryHandlerId(this.discoveryHandlerId);
             discoveryUpstreamDO.setProtocol(this.protocol);
             discoveryUpstreamDO.setUrl(this.url);
             discoveryUpstreamDO.setStatus(this.status);
             discoveryUpstreamDO.setWeight(this.weight);
             discoveryUpstreamDO.setProps(this.props);
+            discoveryUpstreamDO.setNamespaceId(this.namespaceId);
             discoveryUpstreamDO.setDateCreated(this.dateCreated);
             discoveryUpstreamDO.setDateUpdated(this.dateUpdated);
             return discoveryUpstreamDO;

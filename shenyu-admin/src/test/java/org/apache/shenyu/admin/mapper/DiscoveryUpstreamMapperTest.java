@@ -20,14 +20,16 @@ package org.apache.shenyu.admin.mapper;
 import org.apache.shenyu.admin.AbstractSpringIntegrationTest;
 import org.apache.shenyu.admin.model.entity.DiscoveryUpstreamDO;
 import org.apache.shenyu.common.utils.UUIDUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.sql.Timestamp;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import static org.apache.shenyu.common.constant.Constants.SYS_DEFAULT_NAMESPACE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DiscoveryUpstreamMapperTest extends AbstractSpringIntegrationTest {
@@ -43,6 +45,11 @@ class DiscoveryUpstreamMapperTest extends AbstractSpringIntegrationTest {
         insert();
     }
 
+    @AfterEach
+    void remove() {
+        discoveryUpstreamMapper.deleteByIds(Collections.singletonList(discoveryUpstreamDO.getId()));
+    }
+
     @Test
     void existed() {
 
@@ -53,9 +60,9 @@ class DiscoveryUpstreamMapperTest extends AbstractSpringIntegrationTest {
     @Test
     void selectByIds() {
 
-        List<DiscoveryUpstreamDO> dos = discoveryUpstreamMapper.selectByIds(Arrays.asList(discoveryUpstreamDO.getId()));
+        List<DiscoveryUpstreamDO> dos = discoveryUpstreamMapper.selectByIds(Collections.singletonList(discoveryUpstreamDO.getId()));
         assertEquals(1, dos.size());
-        assertEquals("1", dos.get(0).getDiscoveryId());
+        assertEquals("1", dos.get(0).getDiscoveryHandlerId());
     }
 
     void insert() {
@@ -67,17 +74,17 @@ class DiscoveryUpstreamMapperTest extends AbstractSpringIntegrationTest {
     @Test
     void update() {
 
-        discoveryUpstreamDO.setDiscoveryId("2");
+        discoveryUpstreamDO.setDiscoveryHandlerId("2");
         discoveryUpstreamMapper.update(discoveryUpstreamDO);
-        List<DiscoveryUpstreamDO> dos = discoveryUpstreamMapper.selectByIds(Arrays.asList(discoveryUpstreamDO.getId()));
-        assertEquals("2", dos.get(0).getDiscoveryId());
+        List<DiscoveryUpstreamDO> dos = discoveryUpstreamMapper.selectByIds(Collections.singletonList(discoveryUpstreamDO.getId()));
+        assertEquals("2", dos.get(0).getDiscoveryHandlerId());
     }
 
     @Test
     void deleteByIds() {
 
-        discoveryUpstreamMapper.deleteByIds(Arrays.asList(discoveryUpstreamDO.getId()));
-        List<DiscoveryUpstreamDO> dos = discoveryUpstreamMapper.selectByIds(Arrays.asList(discoveryUpstreamDO.getId()));
+        discoveryUpstreamMapper.deleteByIds(Collections.singletonList(discoveryUpstreamDO.getId()));
+        List<DiscoveryUpstreamDO> dos = discoveryUpstreamMapper.selectByIds(Collections.singletonList(discoveryUpstreamDO.getId()));
         assertEquals(0, dos.size());
     }
 
@@ -85,12 +92,13 @@ class DiscoveryUpstreamMapperTest extends AbstractSpringIntegrationTest {
 
         DiscoveryUpstreamDO discoveryUpstreamDO = new DiscoveryUpstreamDO();
         discoveryUpstreamDO.setId(UUIDUtils.getInstance().generateShortUuid());
-        discoveryUpstreamDO.setDiscoveryId("1");
+        discoveryUpstreamDO.setDiscoveryHandlerId("1");
         discoveryUpstreamDO.setStatus(1);
         discoveryUpstreamDO.setWeight(1);
         discoveryUpstreamDO.setProps("test");
         discoveryUpstreamDO.setUrl("test");
         discoveryUpstreamDO.setProtocol("test");
+        discoveryUpstreamDO.setNamespaceId(SYS_DEFAULT_NAMESPACE_ID);
         discoveryUpstreamDO.setDateCreated(new Timestamp(System.currentTimeMillis()));
         discoveryUpstreamDO.setDateUpdated(new Timestamp(System.currentTimeMillis()));
         return discoveryUpstreamDO;

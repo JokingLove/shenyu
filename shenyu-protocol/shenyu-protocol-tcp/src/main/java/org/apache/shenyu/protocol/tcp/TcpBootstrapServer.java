@@ -20,13 +20,12 @@ package org.apache.shenyu.protocol.tcp;
 import com.google.common.eventbus.EventBus;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-
-import org.apache.shenyu.common.dto.convert.selector.DiscoveryUpstream;
+import org.apache.shenyu.common.dto.DiscoveryUpstreamData;
+import org.apache.shenyu.protocol.tcp.connection.ActivityConnectionObserver;
 import org.apache.shenyu.protocol.tcp.connection.Bridge;
 import org.apache.shenyu.protocol.tcp.connection.ConnectionContext;
 import org.apache.shenyu.protocol.tcp.connection.DefaultConnectionConfigProvider;
 import org.apache.shenyu.protocol.tcp.connection.TcpConnectionBridge;
-import org.apache.shenyu.protocol.tcp.connection.ActivityConnectionObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -49,6 +48,8 @@ public class TcpBootstrapServer implements BootstrapServer {
 
     private ConnectionContext connectionContext;
 
+    private LoopResources loopResources;
+
     private DisposableServer server;
 
     private final EventBus eventBus;
@@ -59,22 +60,19 @@ public class TcpBootstrapServer implements BootstrapServer {
 
     @Override
     public void start(final TcpServerConfiguration tcpServerConfiguration) {
-        String loadBalanceAlgorithm = tcpServerConfiguration.getProps().getOrDefault("shenyu.tcpPlugin.tcpServerConfiguration.props.loadBalanceAlgorithm", "random").toString();
+        final String loadBalanceAlgorithm = tcpServerConfiguration.getProps().getOrDefault("loadBalance", "random").toString();
+        final String bossGroupThreadCount = tcpServerConfiguration.getProps().getOrDefault("bossGroupThreadCount", "1").toString();
+        final String workerGroupThreadCount = tcpServerConfiguration.getProps().getOrDefault("workerGroupThreadCount", "12").toString();
         DefaultConnectionConfigProvider connectionConfigProvider = new DefaultConnectionConfigProvider(loadBalanceAlgorithm, tcpServerConfiguration.getPluginSelectorName());
         this.bridge = new TcpConnectionBridge();
         connectionContext = new ConnectionContext(connectionConfigProvider);
         connectionContext.init(tcpServerConfiguration.getProps());
-        LoopResources loopResources = LoopResources.create("shenyu-tcp-bootstrap-server", tcpServerConfiguration.getBossGroupThreadCount(),
-                tcpServerConfiguration.getWorkerGroupThreadCount(), true);
-
+        loopResources = LoopResources.create("shenyu-tcp-bootstrap-server-" + tcpServerConfiguration.getPort(), Integer.parseInt(bossGroupThreadCount),
+                Integer.parseInt(workerGroupThreadCount), true);
         TcpServer tcpServer = TcpServer.create()
-                .doOnChannelInit((connObserver, channel, remoteAddress) -> {
-                    channel.pipeline().addFirst(new LoggingHandler(LogLevel.INFO));
-                })
+                .doOnChannelInit((connObserver, channel, remoteAddress) -> channel.pipeline().addFirst(new LoggingHandler(LogLevel.INFO)))
                 .wiretap(true)
-                .observe((c, s) -> {
-                    LOG.info("connection={}|status={}", c, s);
-                })
+                .observe((c, s) -> LOG.info("connection={}|status={}", c, s))
                 //.childObserve(connectionObserver)
                 .doOnConnection(this::bridgeConnections)
                 .port(tcpServerConfiguration.getPort())
@@ -96,7 +94,7 @@ public class TcpBootstrapServer implements BootstrapServer {
             throw new NullPointerException("remoteAddress is null");
         }
         String address = socketAddress.toString();
-        return address.substring(2, address.indexOf(':'));
+        return address.substring(1, address.indexOf(':'));
     }
 
     /**
@@ -105,7 +103,7 @@ public class TcpBootstrapServer implements BootstrapServer {
      * @param removeList removeList
      */
     @Override
-    public void removeCommonUpstream(final List<DiscoveryUpstream> removeList) {
+    public void removeCommonUpstream(final List<DiscoveryUpstreamData> removeList) {
         eventBus.post(removeList);
     }
 
@@ -116,6 +114,7 @@ public class TcpBootstrapServer implements BootstrapServer {
     @Override
     public void shutdown() {
         server.disposeNow();
+        loopResources.dispose();
     }
 
 }

@@ -18,11 +18,13 @@
 package org.apache.shenyu.admin.model.dto;
 
 import org.apache.shenyu.admin.mapper.DiscoveryUpstreamMapper;
+import org.apache.shenyu.admin.mapper.NamespaceMapper;
 import org.apache.shenyu.admin.validation.annotation.Existed;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
+import java.sql.Timestamp;
 
 /**
  * discovery upstream dto.
@@ -38,15 +40,22 @@ public class DiscoveryUpstreamDTO implements Serializable {
     private String id;
 
     /**
-     * discovery id.
+     * discoveryHandler id.
      */
-    @NotBlank(message = "discoveryId不能为空")
-    private String discoveryId;
+    @NotBlank(message = "discoveryHandlerId不能为空")
+    private String discoveryHandlerId;
+
+    /**
+     * namespaceId.
+     */
+    @NotBlank
+    @Existed(message = "namespaceId is not existed", provider = NamespaceMapper.class)
+    private String namespaceId;
 
     /**
      * protocol.
      */
-    @NotBlank(message = "protocol不能为空")
+//    @NotBlank(message = "protocol不能为空")
     private String protocol;
 
     /**
@@ -74,6 +83,16 @@ public class DiscoveryUpstreamDTO implements Serializable {
     private String props;
 
     /**
+     * created time.
+     */
+    private Timestamp dateCreated;
+
+    /**
+     * updated time.
+     */
+    private Timestamp dateUpdated;
+
+    /**
      * getId.
      *
      * @return id
@@ -94,23 +113,23 @@ public class DiscoveryUpstreamDTO implements Serializable {
     }
 
     /**
-     * getDiscoveryId.
+     * getDiscoveryHandlerId.
      *
-     * @return discoveryId
+     * @return discoveryHandlerId
      */
-    public String getDiscoveryId() {
+    public String getDiscoveryHandlerId() {
 
-        return discoveryId;
+        return discoveryHandlerId;
     }
 
     /**
-     * setDiscoveryId.
+     * setDiscoveryHandlerId.
      *
-     * @param discoveryId discoveryId
+     * @param discoveryHandlerId discoveryHandlerId
      */
-    public void setDiscoveryId(final String discoveryId) {
+    public void setDiscoveryHandlerId(final String discoveryHandlerId) {
 
-        this.discoveryId = discoveryId;
+        this.discoveryHandlerId = discoveryHandlerId;
     }
 
     /**
@@ -210,5 +229,59 @@ public class DiscoveryUpstreamDTO implements Serializable {
     public void setProps(final String props) {
 
         this.props = props;
+    }
+
+    /**
+     * getDateCreated.
+     *
+     * @return dateCreated
+     */
+    public Timestamp getDateCreated() {
+        return dateCreated;
+    }
+
+    /**
+     * setDateCreated.
+     *
+     * @param dateCreated dateCreated
+     */
+    public void setDateCreated(final Timestamp dateCreated) {
+        this.dateCreated = dateCreated;
+    }
+
+    /**
+     * getDateUpdated.
+     *
+     * @return dateUpdated
+     */
+    public Timestamp getDateUpdated() {
+        return dateUpdated;
+    }
+
+    /**
+     * setDateUpdated.
+     *
+     * @param dateUpdated dateUpdated
+     */
+    public void setDateUpdated(final Timestamp dateUpdated) {
+        this.dateUpdated = dateUpdated;
+    }
+
+    /**
+     * get namespaceId.
+     *
+     * @return namespaceId
+     */
+    public String getNamespaceId() {
+        return namespaceId;
+    }
+
+    /**
+     * set namespaceId.
+     *
+     * @param namespaceId namespaceId
+     */
+    public void setNamespaceId(final String namespaceId) {
+        this.namespaceId = namespaceId;
     }
 }

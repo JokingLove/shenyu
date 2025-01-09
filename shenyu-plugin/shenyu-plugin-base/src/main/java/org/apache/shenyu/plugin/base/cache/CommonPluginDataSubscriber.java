@@ -112,11 +112,13 @@ public class CommonPluginDataSubscriber implements PluginDataSubscriber {
     
     @Override
     public void onSubscribe(final PluginData pluginData) {
+        LOG.info("subscribe plugin data for plugin: [id: {}, name: {}, config: {}]", pluginData.getId(), pluginData.getName(), pluginData.getConfig());
         subscribeDataHandler(pluginData, DataEventTypeEnum.UPDATE);
     }
     
     @Override
     public void unSubscribe(final PluginData pluginData) {
+        LOG.info("unSubscribe plugin data for plugin: [id: {}, name: {}]", pluginData.getId(), pluginData.getName());
         subscribeDataHandler(pluginData, DataEventTypeEnum.DELETE);
     }
     
@@ -127,6 +129,7 @@ public class CommonPluginDataSubscriber implements PluginDataSubscriber {
     
     @Override
     public void refreshPluginDataSelf(final List<PluginData> pluginDataList) {
+        LOG.info("start refresh plugin data self");
         if (CollectionUtils.isEmpty(pluginDataList)) {
             return;
         }
@@ -135,16 +138,19 @@ public class CommonPluginDataSubscriber implements PluginDataSubscriber {
     
     @Override
     public void onSelectorSubscribe(final SelectorData selectorData) {
+        LOG.info("subscribe select data for selector: [id: {}, pluginName: {}, name: {}]", selectorData.getId(), selectorData.getPluginName(), selectorData.getName());
         subscribeDataHandler(selectorData, DataEventTypeEnum.UPDATE);
     }
     
     @Override
     public void unSelectorSubscribe(final SelectorData selectorData) {
+        LOG.info("unSubscribe select data for selector: [id: {}, pluginName: {}, name: {}]", selectorData.getId(), selectorData.getPluginName(), selectorData.getName());
         subscribeDataHandler(selectorData, DataEventTypeEnum.DELETE);
     }
     
     @Override
     public void refreshSelectorDataAll() {
+        LOG.info("start refresh all selector data");
         BaseDataCache.getInstance().cleanSelectorData();
         MatchDataCache.getInstance().cleanSelectorData();
         ShenyuTrie selectorTrie = SpringBeanUtils.getInstance().getBean(TrieCacheTypeEnum.SELECTOR.getTrieType());
@@ -161,16 +167,19 @@ public class CommonPluginDataSubscriber implements PluginDataSubscriber {
     
     @Override
     public void onRuleSubscribe(final RuleData ruleData) {
+        LOG.info("subscribe rule data for rule[id: {}, selectorId: {}, name: {}]", ruleData.getId(), ruleData.getSelectorId(), ruleData.getName());
         subscribeDataHandler(ruleData, DataEventTypeEnum.UPDATE);
     }
     
     @Override
     public void unRuleSubscribe(final RuleData ruleData) {
+        LOG.info("unSubscribe rule data for rule[id: {}, selectorId: {}, name: {}]", ruleData.getId(), ruleData.getSelectorId(), ruleData.getName());
         subscribeDataHandler(ruleData, DataEventTypeEnum.DELETE);
     }
     
     @Override
     public void refreshRuleDataAll() {
+        LOG.info("start refresh all rule data");
         BaseDataCache.getInstance().cleanRuleData();
         MatchDataCache.getInstance().cleanRuleDataData();
         ShenyuTrie ruleTrie = SpringBeanUtils.getInstance().getBean(TrieCacheTypeEnum.RULE.getTrieType());
@@ -205,10 +214,10 @@ public class CommonPluginDataSubscriber implements PluginDataSubscriber {
         if (data instanceof PluginData) {
             PluginData pluginData = (PluginData) data;
             final PluginData oldPluginData = BaseDataCache.getInstance().obtainPluginData(pluginData.getName());
-            BaseDataCache.getInstance().cachePluginData(pluginData);
             Optional.ofNullable(handlerMap.get(pluginData.getName()))
                     .ifPresent(handler -> handler.handlerPlugin(pluginData));
 
+            BaseDataCache.getInstance().cachePluginData(pluginData);
             // update enabled plugins
             PluginHandlerEventEnum state = Boolean.TRUE.equals(pluginData.getEnabled())
                     ? PluginHandlerEventEnum.ENABLED : PluginHandlerEventEnum.DISABLED;
@@ -232,9 +241,11 @@ public class CommonPluginDataSubscriber implements PluginDataSubscriber {
             // remove match cache
             if (selectorMatchConfig.getCache().getEnabled()) {
                 MatchDataCache.getInstance().removeSelectorData(selectorData.getPluginName(), selectorData.getId());
+                MatchDataCache.getInstance().removeEmptySelectorData(selectorData.getPluginName());
             }
             if (ruleMatchCacheConfig.getCache().getEnabled()) {
                 MatchDataCache.getInstance().removeRuleDataBySelector(selectorData.getPluginName(), selectorData.getId());
+                MatchDataCache.getInstance().removeEmptyRuleData(selectorData.getPluginName());
             }
             updateSelectorTrieCache(selectorData);
         } else if (data instanceof RuleData) {
@@ -244,6 +255,7 @@ public class CommonPluginDataSubscriber implements PluginDataSubscriber {
                     .ifPresent(handler -> handler.handlerRule(ruleData));
             if (ruleMatchCacheConfig.getCache().getEnabled()) {
                 MatchDataCache.getInstance().removeRuleData(ruleData.getPluginName(), ruleData.getId());
+                MatchDataCache.getInstance().removeEmptyRuleData(ruleData.getPluginName());
             }
             updateRuleTrieCache(ruleData);
         }
@@ -260,7 +272,7 @@ public class CommonPluginDataSubscriber implements PluginDataSubscriber {
             return;
         }
         if (Objects.isNull(oldPluginData) || Objects.isNull(oldPluginData.getSort())
-                || (!Objects.equals(oldPluginData.getSort(), pluginData.getSort()))) {
+                || !Objects.equals(oldPluginData.getSort(), pluginData.getSort())) {
             eventPublisher.publishEvent(new PluginHandlerEvent(PluginHandlerEventEnum.SORTED, pluginData));
         }
     }
@@ -286,6 +298,7 @@ public class CommonPluginDataSubscriber implements PluginDataSubscriber {
             // remove selector match cache
             if (selectorMatchConfig.getCache().getEnabled()) {
                 MatchDataCache.getInstance().removeSelectorData(selectorData.getPluginName(), selectorData.getId());
+                MatchDataCache.getInstance().removeEmptySelectorData(selectorData.getPluginName());
             }
             // remove selector trie cache
             if (selectorMatchConfig.getTrie().getEnabled()) {
@@ -298,6 +311,7 @@ public class CommonPluginDataSubscriber implements PluginDataSubscriber {
                     .ifPresent(handler -> handler.removeRule(ruleData));
             if (ruleMatchCacheConfig.getCache().getEnabled()) {
                 MatchDataCache.getInstance().removeRuleData(ruleData.getPluginName(), ruleData.getId());
+                MatchDataCache.getInstance().removeEmptyRuleData(ruleData.getPluginName());
             }
             if (ruleMatchCacheConfig.getTrie().getEnabled()) {
                 eventPublisher.publishEvent(new TrieEvent(TrieEventEnum.REMOVE, TrieCacheTypeEnum.RULE, ruleData));
