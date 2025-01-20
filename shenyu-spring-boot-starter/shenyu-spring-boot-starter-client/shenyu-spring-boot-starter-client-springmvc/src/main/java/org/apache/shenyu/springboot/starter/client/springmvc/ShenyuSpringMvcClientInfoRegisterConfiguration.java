@@ -19,38 +19,20 @@ package org.apache.shenyu.springboot.starter.client.springmvc;
 
 import org.apache.shenyu.client.auto.config.ClientRegisterConfiguration;
 import org.apache.shenyu.client.core.disruptor.ShenyuClientRegisterEventPublisher;
-import org.apache.shenyu.client.core.register.ApiBean;
-import org.apache.shenyu.client.core.register.ClientInfoRefreshedEventListener;
 import org.apache.shenyu.client.core.register.ClientRegisterConfig;
-import org.apache.shenyu.client.core.register.ClientRegisterConfigImpl;
-import org.apache.shenyu.client.core.register.extractor.ApiBeansExtractor;
-import org.apache.shenyu.client.core.register.matcher.ApiDocBeanMatcher;
-import org.apache.shenyu.client.core.register.matcher.ApiDocDefinitionMatcher;
-import org.apache.shenyu.client.core.register.matcher.Matcher;
-import org.apache.shenyu.client.core.register.parser.ApiDocDefinitionParser;
-import org.apache.shenyu.client.core.register.parser.ApiMetaDefinitionParser;
-import org.apache.shenyu.client.core.register.parser.HttpApiDocDefinitionParser;
-import org.apache.shenyu.client.core.register.parser.PreApiMetaBeanParser;
+import org.apache.shenyu.client.core.register.matcher.ExtractorProcessor;
+import org.apache.shenyu.client.core.register.registrar.AbstractApiDocRegistrar;
+import org.apache.shenyu.client.core.register.registrar.AbstractApiMetaRegistrar;
+import org.apache.shenyu.client.core.register.registrar.HttpApiDocRegistrar;
+import org.apache.shenyu.client.springmvc.proceeor.register.ShenyuSpringMvcClientProcessorImpl;
 import org.apache.shenyu.client.springmvc.register.SpringMvcApiBeansExtractor;
-import org.apache.shenyu.client.springmvc.register.apimeta.SpringMvcApiMetaBeanMatcher;
-import org.apache.shenyu.client.springmvc.register.apimeta.SpringMvcApiMetaDefinitionMatcher;
-import org.apache.shenyu.client.springmvc.register.apimeta.SpringMvcApiMetaDefinitionParser;
-import org.apache.shenyu.client.springmvc.register.apimeta.SpringMvcPreApiMetaBeanMatcher;
-import org.apache.shenyu.client.springmvc.register.apimeta.SpringMvcPreApiMetaBeanParser;
-import org.apache.shenyu.common.enums.RpcTypeEnum;
-import org.apache.shenyu.register.common.config.ShenyuClientConfig;
+import org.apache.shenyu.client.springmvc.register.SpringMvcApiMetaRegister;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 
-import static org.apache.shenyu.client.core.constant.ShenyuClientConstants.API_DOC_BEAN_MATCHER;
-import static org.apache.shenyu.client.core.constant.ShenyuClientConstants.API_DOC_DEFINITION_MATCHER;
-import static org.apache.shenyu.client.core.constant.ShenyuClientConstants.API_META_BEAN_MATCHER;
-import static org.apache.shenyu.client.core.constant.ShenyuClientConstants.API_META_DEFINITION_MATCHER;
-import static org.apache.shenyu.client.core.constant.ShenyuClientConstants.PRE_API_META_BEAN_MATCHER;
+import java.util.List;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnBean(ClientRegisterConfiguration.class)
@@ -60,129 +42,54 @@ public class ShenyuSpringMvcClientInfoRegisterConfiguration {
     }
 
     /**
-     * ClientInfoRefreshedEventListener Bean.
-     *
-     * @param clientRegisterConfig clientRegisterConfig
-     * @param publisher publisher
-     * @return clientInfoRefreshedEventListener
-     */
-    @Bean
-    public ClientInfoRefreshedEventListener clientInfoEventListener(final ClientRegisterConfig clientRegisterConfig,
-                                                                    final ShenyuClientRegisterEventPublisher publisher) {
-        return new ClientInfoRefreshedEventListener(clientRegisterConfig, publisher);
-    }
-
-    /**
      * ApiBeansExtractor Bean.
-     * @param clientRegisterConfig clientRegisterConfig
+     *
+     * @param extractorProcessorList extractorProcessorList
      * @return apiBeansExtractor
      */
     @Bean
     @ConditionalOnMissingBean
-    public ApiBeansExtractor apiBeansExtractor(final ClientRegisterConfig clientRegisterConfig) {
-        return new SpringMvcApiBeansExtractor(clientRegisterConfig.getContextPath());
+    public SpringMvcApiBeansExtractor springMvcApiBeansExtractor(final List<ExtractorProcessor> extractorProcessorList) {
+        final SpringMvcApiBeansExtractor extractor = SpringMvcApiBeansExtractor.buildDefaultSpringMvcApiBeansExtractor();
+        for (ExtractorProcessor processor : extractorProcessorList) {
+            extractor.addExtractorProcessor(processor);
+        }
+        return extractor;
     }
 
     /**
-     * ApiMetaBeanMatcher Bean.
+     * shenyuSpringMvcClientProcessor.
      *
-     * @return apiMetaBeanMatcher.
+     * @return shenyuSpringMvcClientProcessor
      */
-    @Bean(name = API_META_BEAN_MATCHER)
-    @ConditionalOnMissingBean(name = API_META_BEAN_MATCHER)
-    public Matcher<ApiBean> apiMetaBeanMatcher() {
-        return new SpringMvcApiMetaBeanMatcher();
+    @Bean
+    public ShenyuSpringMvcClientProcessorImpl shenyuSpringMvcClientProcessor() {
+        return new ShenyuSpringMvcClientProcessorImpl();
     }
 
     /**
-     * apiDefinitionMetaMatcher Bean.
+     * Builds ApiMetaRegistrar Bean.
      *
-     * @return apiDefinitionMetaMatcher
-     */
-    @Bean(name = API_META_DEFINITION_MATCHER)
-    @ConditionalOnMissingBean(name = API_META_DEFINITION_MATCHER)
-    public Matcher<ApiBean.ApiDefinition> apiMetaDefinitionMatcher() {
-        return new SpringMvcApiMetaDefinitionMatcher();
-    }
-
-    /**
-     * ApiMetaDefinitionParser Bean.
-     *
+     * @param publisher            publisher
      * @param clientRegisterConfig clientRegisterConfig
-     * @return apiMetaParser
+     * @return ApiMetaRegistrar
      */
-    @Bean
-    public ApiMetaDefinitionParser apiMetaDefinitionParser(final ClientRegisterConfig clientRegisterConfig) {
-        return new SpringMvcApiMetaDefinitionParser(clientRegisterConfig);
+    public AbstractApiMetaRegistrar buildApiMetaRegistrar(final ShenyuClientRegisterEventPublisher publisher,
+                                                          final ClientRegisterConfig clientRegisterConfig) {
+
+        return new SpringMvcApiMetaRegister(publisher, clientRegisterConfig);
     }
 
     /**
-     * PreApiMetaBeanMatcher Bean.
+     * Builds ApiDocRegistrar  Bean.
      *
-     * @return preApiMetaBeanMatcher
-     */
-    @Bean(name = PRE_API_META_BEAN_MATCHER)
-    @ConditionalOnMissingBean(name = PRE_API_META_BEAN_MATCHER)
-    public Matcher<ApiBean> preApiMetaBeanMatcher() {
-        return new SpringMvcPreApiMetaBeanMatcher();
-    }
-
-    /**
-     * apiBeanMetaParser Bean.
-     *
+     * @param publisher            publisher
      * @param clientRegisterConfig clientRegisterConfig
-     * @return apiBeanMetaParser
+     * @return ApiDocRegistrar
      */
-    @Bean
-    public PreApiMetaBeanParser apiBeanMetaParser(final ClientRegisterConfig clientRegisterConfig) {
-        return new SpringMvcPreApiMetaBeanParser(clientRegisterConfig);
+    public AbstractApiDocRegistrar buildApiDocRegistrar(final ShenyuClientRegisterEventPublisher publisher,
+                                                        final ClientRegisterConfig clientRegisterConfig) {
+        return new HttpApiDocRegistrar(publisher, clientRegisterConfig);
     }
 
-    /**
-     * ApiDocBeanMatcher Bean.
-     *
-     * @return apiDocBeanMatcher.
-     */
-    @Bean(name = API_DOC_BEAN_MATCHER)
-    @ConditionalOnMissingBean(name = API_DOC_BEAN_MATCHER)
-    public Matcher<ApiBean> apiDocBeanMatcher() {
-        return new ApiDocBeanMatcher();
-    }
-
-    /**
-     * ApiDocDefinitionMatcher Bean.
-     *
-     * @return apiDocDefinitionMatcher
-     */
-    @Bean(name = API_DOC_DEFINITION_MATCHER)
-    @ConditionalOnMissingBean(name = API_DOC_DEFINITION_MATCHER)
-    public Matcher<ApiBean.ApiDefinition> apiDocDefinitionMatcher() {
-        return new ApiDocDefinitionMatcher();
-    }
-
-    /**
-     * ApiDocDefinitionParser Bean.
-     *
-     * @param clientRegisterConfig clientRegisterConfig
-     * @return apiDocDefinitionParser
-     */
-    @Bean
-    @ConditionalOnMissingBean
-    public ApiDocDefinitionParser apiDocDefinitionParser(final ClientRegisterConfig clientRegisterConfig) {
-        return new HttpApiDocDefinitionParser(clientRegisterConfig);
-    }
-
-    /**
-     * ClientRegisterConfig Bean.
-     * @param shenyuClientConfig shenyuClientConfig
-     * @param applicationContext applicationContext
-     * @param env env
-     * @return clientRegisterConfig
-     */
-    @Bean
-    public ClientRegisterConfig clientRegisterConfig(final ShenyuClientConfig shenyuClientConfig,
-                                                     final ApplicationContext applicationContext,
-                                                     final Environment env) {
-        return new ClientRegisterConfigImpl(shenyuClientConfig, RpcTypeEnum.HTTP, applicationContext, env);
-    }
 }

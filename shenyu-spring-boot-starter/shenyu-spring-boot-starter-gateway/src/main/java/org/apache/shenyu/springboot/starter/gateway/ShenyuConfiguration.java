@@ -22,7 +22,8 @@ import org.apache.shenyu.common.config.ShenyuConfig.RuleMatchCache;
 import org.apache.shenyu.common.config.ShenyuConfig.SelectorMatchCache;
 import org.apache.shenyu.plugin.api.RemoteAddressResolver;
 import org.apache.shenyu.plugin.api.ShenyuPlugin;
-import org.apache.shenyu.plugin.base.RpcParamTransformPlugin;
+import org.apache.shenyu.plugin.base.alert.AlarmService;
+import org.apache.shenyu.plugin.base.alert.AlarmServiceImpl;
 import org.apache.shenyu.plugin.base.cache.CommonMetaDataSubscriber;
 import org.apache.shenyu.plugin.base.cache.CommonPluginDataSubscriber;
 import org.apache.shenyu.plugin.base.handler.MetaDataHandler;
@@ -59,6 +60,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.annotation.Order;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.DispatcherHandler;
 import org.springframework.web.server.WebFilter;
 
@@ -107,16 +109,6 @@ public class ShenyuConfiguration {
     @Bean("dispatcherHandler")
     public DispatcherHandler dispatcherHandler() {
         return new DispatcherHandler();
-    }
-    
-    /**
-     * Param transform plugin.
-     *
-     * @return the shenyu plugin
-     */
-    @Bean
-    public ShenyuPlugin paramTransformPlugin() {
-        return new RpcParamTransformPlugin();
     }
     
     /**
@@ -312,5 +304,17 @@ public class ShenyuConfiguration {
     @Bean
     public ShenyuTrieListener shenyuTrieListener() {
         return new ShenyuTrieListener();
+    }
+    
+    /**
+     * shenyu alarm service.
+     * @param restTemplate restTemplate
+     * @param shenyuConfig shenyuConfig
+     * @return AlarmService
+     */
+    @Bean
+    public AlarmService shenyuAlarmService(final ShenyuConfig shenyuConfig, final RestTemplate restTemplate) {
+        ShenyuConfig.AlertConfig alertConfig = shenyuConfig.getAlert();
+        return new AlarmServiceImpl(restTemplate, alertConfig.getAdmins(), alertConfig.getEnabled());
     }
 }

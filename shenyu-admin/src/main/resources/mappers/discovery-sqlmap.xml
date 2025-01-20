@@ -24,10 +24,11 @@
         <result column="date_updated" jdbcType="TIMESTAMP" property="dateUpdated"/>
         <result column="name" jdbcType="VARCHAR" property="name"/>
         <result column="type" jdbcType="VARCHAR" property="type"/>
-        <result column="handler" jdbcType="VARCHAR" property="handler"/>
-        <result column="service_list" jdbcType="VARCHAR" property="serviceList"/>
-        <result column="listener_node" jdbcType="VARCHAR" property="listenerNode"/>
+        <result column="level" jdbcType="VARCHAR" property="level"/>
+        <result column="server_list" jdbcType="VARCHAR" property="serverList"/>
+        <result column="plugin_name" jdbcType="VARCHAR" property="pluginName"/>
         <result column="props" jdbcType="LONGVARCHAR" property="props"/>
+        <result column="namespace_id" jdbcType="VARCHAR" property="namespaceId"/>
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -36,11 +37,18 @@
         date_updated,
         name,
         type,
-        handler,
-        service_list,
-        listener_node,
-        props
+        level,
+        server_list,
+        plugin_name,
+        props,
+        namespace_id
     </sql>
+
+    <select id="existed" resultType="java.lang.Boolean">
+        SELECT true
+        FROM discovery
+        WHERE id = #{id} limit 1
+    </select>
 
     <select id="selectById" parameterType="java.lang.String" resultMap="BaseResultMap">
         SELECT
@@ -49,27 +57,79 @@
         WHERE id = #{id, jdbcType=VARCHAR}
     </select>
 
-    <insert id="insert" parameterType="org.apache.shenyu.admin.model.entity.DiscoveryDO">
+    <select id="selectByPluginNameAndLevelAndNamespaceId" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM discovery
+        WHERE plugin_name = #{pluginName, jdbcType=VARCHAR} AND level = #{level, jdbcType=VARCHAR} AND namespace_id = #{namespaceId, jdbcType=VARCHAR}
+    </select>
+
+    <select id="selectAll" resultType="org.apache.shenyu.admin.model.entity.DiscoveryDO">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM discovery
+    </select>
+
+    <select id="selectAllByNamespaceId" resultType="org.apache.shenyu.admin.model.entity.DiscoveryDO">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM discovery
+        WHERE namespace_id = #{namespaceId, jdbcType=VARCHAR}
+    </select>
+
+    <select id="selectAllByNamespaceIds" resultType="org.apache.shenyu.admin.model.entity.DiscoveryDO">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM discovery
+        WHERE namespace_id IN
+        <foreach item="namespaceId" collection="namespaceIds" open="(" separator="," close=")">
+            #{namespaceId, jdbcType=VARCHAR}
+        </foreach>
+    </select>
+
+    <select id="selectBySelectorNameAndPluginName" resultType="org.apache.shenyu.admin.model.entity.DiscoveryDO">
+        SELECT
+        d.id,
+        d.date_created,
+        d.date_updated,
+        d.name,
+        d.type,
+        d.level,
+        d.server_list,
+        d.plugin_name,
+        d.props,
+        d.namespace_id
+        FROM discovery d
+        INNER JOIN discovery_handler dh on d.id = dh.discovery_id
+        INNER JOIN discovery_rel dr on dh.id = dr.discovery_handler_id
+        INNER JOIN selector s on dr.selector_id = s.id and s.enabled = 1
+        where s.name = #{selectorName} and d.plugin_name = #{pluginName}
+    </select>
+
+    <insert id="insert" keyColumn="id" keyProperty="id" useGeneratedKeys="true"
+            parameterType="org.apache.shenyu.admin.model.entity.DiscoveryDO">
         INSERT INTO discovery
         (id,
         date_created,
         date_updated,
         name,
         type,
-        handler,
-        service_list,
-        listener_node,
-        props)
+        level,
+        server_list,
+        plugin_name,
+        props,
+        namespace_id)
         VALUES
         (#{id, jdbcType=VARCHAR},
         #{dateCreated, jdbcType=TIMESTAMP},
         #{dateUpdated, jdbcType=TIMESTAMP},
         #{name, jdbcType=VARCHAR},
         #{type, jdbcType=VARCHAR},
-        #{handler, jdbcType=VARCHAR},
-        #{serviceList, jdbcType=VARCHAR},
-        #{listenerNode, jdbcType=VARCHAR},
-        #{props, jdbcType=LONGVARCHAR})
+        #{level, jdbcType=VARCHAR},
+        #{serverList, jdbcType=VARCHAR},
+        #{pluginName, jdbcType=VARCHAR},
+        #{props, jdbcType=LONGVARCHAR},
+        #{namespaceId, jdbcType=VARCHAR})
     </insert>
 
     <insert id="insertSelective" parameterType="org.apache.shenyu.admin.model.entity.DiscoveryDO">
@@ -88,17 +148,20 @@
             <if test="type != null">
                 type,
             </if>
-            <if test="handler != null">
-                handler,
+            <if test="level != null">
+                level,
             </if>
-            <if test="serviceList != null">
-                service_list,
+            <if test="serverList != null">
+                server_list,
             </if>
-            <if test="listenerNode != null">
-                listener_node,
+            <if test="pluginName != null">
+                plugin_name,
             </if>
             <if test="props != null">
                 props,
+            </if>
+            <if test="namespaceId != null">
+                namespace_id,
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -115,17 +178,20 @@
             <if test="type != null">
                 #{type, jdbcType=VARCHAR},
             </if>
-            <if test="handler != null">
-                #{handler, jdbcType=VARCHAR},
+            <if test="level != null">
+                #{level, jdbcType=VARCHAR},
             </if>
-            <if test="serviceList != null">
-                #{serviceList, jdbcType=VARCHAR},
+            <if test="serverList != null">
+                #{serverList, jdbcType=VARCHAR},
             </if>
-            <if test="listenerNode != null">
-                #{listenerNode, jdbcType=VARCHAR},
+            <if test="pluginName != null">
+                #{pluginName, jdbcType=VARCHAR},
             </if>
             <if test="props != null">
                 #{props, jdbcType=LONGVARCHAR},
+            </if>
+            <if test="namespaceId != null">
+                #{namespaceId, jdbcType=VARCHAR},
             </if>
         </trim>
     </insert>
@@ -136,15 +202,15 @@
         date_updated = #{dateUpdated, jdbcType=TIMESTAMP},
         name = #{name, jdbcType=VARCHAR},
         type = #{type, jdbcType=VARCHAR},
-        handler = #{handler, jdbcType=VARCHAR},
-        service_list = #{serviceList, jdbcType=VARCHAR},
-        listener_node = #{listenerNode, jdbcType=VARCHAR},
+        level = #{level, jdbcType=VARCHAR},
+        server_list = #{serverList, jdbcType=VARCHAR},
+        plugin_name = #{pluginName, jdbcType=VARCHAR},
         props = #{props, jdbcType=LONGVARCHAR}
         WHERE id = #{id, jdbcType=VARCHAR}
     </update>
 
     <update id="updateSelective" parameterType="org.apache.shenyu.admin.model.entity.DiscoveryDO">
-        UPDATE rule_condition
+        UPDATE discovery
         <set>
             <if test="dateCreated != null">
                 date_created = #{dateCreated, jdbcType=TIMESTAMP},
@@ -153,19 +219,19 @@
                 date_updated = #{dateUpdated, jdbcType=TIMESTAMP},
             </if>
             <if test="name != null">
-                type = #{name, jdbcType=VARCHAR},
+                name = #{name, jdbcType=VARCHAR},
             </if>
             <if test="type != null">
                 type = #{type, jdbcType=VARCHAR},
             </if>
-            <if test="handler != null">
-                type = #{handler, jdbcType=VARCHAR},
+            <if test="level != null">
+                level = #{level, jdbcType=VARCHAR},
             </if>
-            <if test="serviceList != null">
-                service_list = #{serviceList, jdbcType=VARCHAR},
+            <if test="serverList != null">
+                server_list = #{serverList, jdbcType=VARCHAR},
             </if>
-            <if test="listenerNode != null">
-                listener_node = #{listenerNode, jdbcType=VARCHAR},
+            <if test="pluginName != null">
+                plugin_name = #{pluginName, jdbcType=VARCHAR},
             </if>
             <if test="props != null">
                 props = #{props, jdbcType=LONGVARCHAR},

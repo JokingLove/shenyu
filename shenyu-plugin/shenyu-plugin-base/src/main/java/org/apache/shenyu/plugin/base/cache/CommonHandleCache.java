@@ -45,12 +45,21 @@ public class CommonHandleCache<K, V> implements HandleCache<K, V> {
 
     @Override
     public void cachedHandle(final K key, final V value) {
-        Optional.ofNullable(key).ifPresent(data -> cached.put(key, value));
+        Optional.ofNullable(key).ifPresent(data_key -> Optional.ofNullable(value).ifPresent(data_value -> cached.put(data_key, data_value)));
     }
 
     @Override
     public void removeHandle(final K key) {
         Optional.ofNullable(key).ifPresent(cached::remove);
+    }
+    
+    /**
+     * Get all cached.
+     *
+     * @return all cached
+     */
+    public ConcurrentHashMap<K, V> getAllCache() {
+        return cached;
     }
 }
 

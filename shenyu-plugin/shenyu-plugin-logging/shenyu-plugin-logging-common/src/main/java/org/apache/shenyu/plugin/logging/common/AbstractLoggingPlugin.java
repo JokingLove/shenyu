@@ -29,6 +29,7 @@ import org.apache.shenyu.plugin.base.utils.HostAddressUtils;
 import org.apache.shenyu.plugin.logging.common.body.LoggingServerHttpRequest;
 import org.apache.shenyu.plugin.logging.common.body.LoggingServerHttpResponse;
 import org.apache.shenyu.plugin.logging.common.collector.LogCollector;
+import org.apache.shenyu.plugin.logging.common.constant.GenericLoggingConstant;
 import org.apache.shenyu.plugin.logging.common.entity.CommonLoggingRuleHandle;
 import org.apache.shenyu.plugin.logging.common.entity.ShenyuRequestLog;
 import org.apache.shenyu.plugin.logging.common.handler.AbstractLogPluginDataHandler;
@@ -46,16 +47,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import org.apache.shenyu.plugin.logging.common.constant.GenericLoggingConstant;
-
 /**
  * abstract logging plugin.
  */
 public abstract class AbstractLoggingPlugin<L extends ShenyuRequestLog> extends AbstractShenyuPlugin {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractLoggingPlugin.class);
-
-    private static String dataDesensitizeAlg;
 
     /**
      * LogCollector.
@@ -76,7 +73,7 @@ public abstract class AbstractLoggingPlugin<L extends ShenyuRequestLog> extends 
      *
      * @param exchange exchange
      * @param selector selector
-     * @param rule rule
+     * @param rule     rule
      * @return based on ShenyuRequestLog
      */
     protected abstract L doLogExecute(ServerWebExchange exchange, SelectorData selector, RuleData rule);
@@ -85,8 +82,9 @@ public abstract class AbstractLoggingPlugin<L extends ShenyuRequestLog> extends 
     public Mono<Void> doExecute(final ServerWebExchange exchange, final ShenyuPluginChain chain,
                                 final SelectorData selector, final RuleData rule) {
         CommonLoggingRuleHandle commonLoggingRuleHandle = AbstractLogPluginDataHandler.CACHED_HANDLE.get().obtainHandle(CacheKeyUtils.INST.getKey(rule));
-        boolean desensitized = false;
+        boolean desensitized = Boolean.FALSE;
         Set<String> keywordSets = Sets.newHashSet();
+        String dataDesensitizeAlg = DataDesensitizeEnum.MD5_ENCRYPT.getDataDesensitizeAlg();
         if (Objects.nonNull(commonLoggingRuleHandle)) {
             String keywords = commonLoggingRuleHandle.getKeyword();
             desensitized = StringUtils.isNotBlank(keywords) && commonLoggingRuleHandle.getMaskStatus();
@@ -98,25 +96,35 @@ public abstract class AbstractLoggingPlugin<L extends ShenyuRequestLog> extends 
         }
         ServerHttpRequest request = exchange.getRequest();
         // control sampling
-        if (!LogCollectConfigUtils.isSampled(exchange.getRequest())) {
+        if (!LogCollectConfigUtils.isSampled(exchange, selector)) {
             return chain.execute(exchange);
         }
+
         L requestInfo = this.doLogExecute(exchange, selector, rule);
         requestInfo.setRequestUri(request.getURI().toString());
-        requestInfo.setMethod(request.getMethodValue());
+        requestInfo.setMethod(request.getMethod().name());
+        requestInfo.setRequestMethod(request.getMethod().name());
         requestInfo.setRequestHeader(LogCollectUtils.getHeaders(request.getHeaders()));
         requestInfo.setQueryParams(request.getURI().getQuery());
         requestInfo.setClientIp(HostAddressUtils.acquireIp(exchange));
         requestInfo.setUserAgent(request.getHeaders().getFirst(GenericLoggingConstant.USER_AGENT));
         requestInfo.setHost(request.getHeaders().getFirst(GenericLoggingConstant.HOST));
-        requestInfo.setPath(request.getURI().getPath());
+        requestInfo.setPath(request.getURI().getRawPath());
+        requestInfo.setSelectorId(selector.getId());
+        requestInfo.setRuleId(rule.getId());
+        requestInfo.setNamespaceId(rule.getNamespaceId());
         LoggingServerHttpRequest<L> loggingServerHttpRequest = new LoggingServerHttpRequest<>(request, requestInfo);
         LoggingServerHttpResponse<L> loggingServerHttpResponse = new LoggingServerHttpResponse<>(exchange.getResponse(),
                 requestInfo, this.logCollector(), desensitized, keywordSets, dataDesensitizeAlg);
         ServerWebExchange webExchange = exchange.mutate().request(loggingServerHttpRequest)
                 .response(loggingServerHttpResponse).build();
         loggingServerHttpResponse.setExchange(webExchange);
-        return chain.execute(webExchange).doOnError(loggingServerHttpResponse::logError);
+        try {
+            return chain.execute(webExchange).doOnError(loggingServerHttpResponse::logError);
+        } catch (Exception e) {
+            loggingServerHttpResponse.logError(e);
+            throw e;
+        }
     }
 
     /**

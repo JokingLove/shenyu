@@ -17,10 +17,13 @@
 
 package org.apache.shenyu.admin.service;
 
-import org.apache.shenyu.admin.model.dto.ProxySelectorDTO;
+import org.apache.shenyu.admin.model.dto.ProxySelectorAddDTO;
 import org.apache.shenyu.admin.model.page.CommonPager;
 import org.apache.shenyu.admin.model.query.ProxySelectorQuery;
+import org.apache.shenyu.admin.model.result.ConfigImportResult;
 import org.apache.shenyu.admin.model.vo.ProxySelectorVO;
+import org.apache.shenyu.admin.service.configs.ConfigsImportContext;
+import org.apache.shenyu.common.dto.ProxySelectorData;
 
 import java.util.List;
 
@@ -37,10 +40,10 @@ public interface ProxySelectorService {
     /**
      * createOrUpdate.
      *
-     * @param proxySelectorDTO proxySelectorDTO
+     * @param proxySelectorAddDTO proxySelectorAddDTO
      * @return the string
      */
-    String createOrUpdate(ProxySelectorDTO proxySelectorDTO);
+    String createOrUpdate(ProxySelectorAddDTO proxySelectorAddDTO);
 
     /**
      * delete.
@@ -49,4 +52,68 @@ public interface ProxySelectorService {
      * @return the string
      */
     String delete(List<String> ids);
+
+    /**
+     * addProxySelector.
+     *
+     * @param proxySelectorAddDTO {@link ProxySelectorAddDTO}
+     * @return the result
+     */
+    String create(ProxySelectorAddDTO proxySelectorAddDTO);
+
+
+    /**
+     * bind selector and discoveryHandler.
+     *
+     * @param proxySelectorAddDTO proxySelectorAddDTO
+     * @return the result.
+     */
+    String bindingDiscoveryHandler(ProxySelectorAddDTO proxySelectorAddDTO);
+
+    /**
+     * fetchData.
+     *
+     * @param discoveryHandlerId discoveryHandlerId
+     */
+    void fetchData(String discoveryHandlerId);
+
+    /**
+     * listAll.
+     *
+     * @return ProxySelectorDTOList
+     */
+    List<ProxySelectorData> listAll();
+
+    /**
+     * listAll.
+     *
+     * @param namespaceId namespaceId
+     * @return ProxySelectorDTOList
+     */
+    List<ProxySelectorData> listAllByNamespaceId(String namespaceId);
+
+    /**
+     * list all data.
+     *
+     * @return ProxySelectorVOList
+     */
+    List<ProxySelectorVO> listAllData();
+
+    /**
+     * Import proxy selector list.
+     *
+     * @param proxySelectorList proxy selector data list
+     * @return config import result
+     */
+    ConfigImportResult importData(List<ProxySelectorData> proxySelectorList);
+
+    /**
+     * Import proxy selector list.
+     *
+     * @param namespace namespace
+     * @param proxySelectorList proxy selector data list
+     * @param context import context
+     * @return config import result
+     */
+    ConfigImportResult importData(String namespace, List<ProxySelectorData> proxySelectorList, ConfigsImportContext context);
 }

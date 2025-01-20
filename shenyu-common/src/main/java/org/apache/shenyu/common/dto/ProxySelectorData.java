@@ -17,9 +17,6 @@
 
 package org.apache.shenyu.common.dto;
 
-import org.apache.shenyu.common.dto.convert.selector.DiscoveryUpstream;
-
-import java.util.List;
 import java.util.Properties;
 
 /**
@@ -39,7 +36,7 @@ public class ProxySelectorData {
 
     private Properties props = new Properties();
 
-    private List<DiscoveryUpstream> discoveryUpstreamList;
+    private String namespaceId;
 
     /**
      * getId.
@@ -150,21 +147,21 @@ public class ProxySelectorData {
     }
 
     /**
-     * getDiscoveryUpstreamList.
+     * get namespaceId.
      *
-     * @return discoveryUpstreamList
+     * @return namespaceId
      */
-    public List<DiscoveryUpstream> getDiscoveryUpstreamList() {
-        return discoveryUpstreamList;
+    public String getNamespaceId() {
+        return namespaceId;
     }
 
     /**
-     * setDiscoveryUpstreamList.
+     * set namespaceId.
      *
-     * @param discoveryUpstreamList discoveryUpstreamList
+     * @param namespaceId namespaceId
      */
-    public void setDiscoveryUpstreamList(final List<DiscoveryUpstream> discoveryUpstreamList) {
-        this.discoveryUpstreamList = discoveryUpstreamList;
+    public void setNamespaceId(final String namespaceId) {
+        this.namespaceId = namespaceId;
     }
 
 }
